@@ -4,7 +4,7 @@
  * Nothing here talks to anything except public DNS resolvers.
  */
 const EmailCheck = (() => {
-  const VERSION = "1.0";
+  const VERSION = "1.1";
   const TYPES = { A: 1, CNAME: 5, MX: 15, TXT: 16, AAAA: 28 };
 
   /* ------------------------------------------------------------------ DNS */
@@ -91,7 +91,14 @@ const EmailCheck = (() => {
     "k1", "k2", "s1", "s2", "mandrill", "mxvault", "zoho", "zmail",
     "protonmail", "protonmail2", "protonmail3", "mailjet", "mlsend", "mlsend2",
     "resend", "pm", "sig1", "everlytickey1", "cm",
+    "20230601", "20221208", "20210112", "20161025",
   ];
+  // Selectors that clearly belong to a sending service, not to the mailbox provider
+  const THIRD_PARTY_SELECTORS = {
+    s1: "SendGrid", s2: "SendGrid", k1: "Mailchimp", k2: "Mailchimp", k3: "Mailchimp", mandrill: "Mandrill",
+    mlsend: "MailerLite", mlsend2: "MailerLite", pm: "Postmark", mailjet: "Mailjet", resend: "Resend",
+    cm: "Campaign Monitor", everlytickey1: "Everlytic", mxvault: "Mxvault",
+  };
 
   const IP_BLOCKLISTS = [
     { zone: "zen.spamhaus.org", name: "Spamhaus ZEN", severe: true },
@@ -144,7 +151,9 @@ const EmailCheck = (() => {
         state.includes.push(target);
         await evalSpf(target, resolve, state);
       } else if (term.modifier && n === "redirect" && term.value) {
-        await evalSpf(stripDot(term.value), resolve, state);
+        const target = stripDot(term.value);
+        state.includes.push(target);   // redirect= authorizes the target's senders just like include:
+        await evalSpf(target, resolve, state);
       } else if (n === "ip4" && term.value) {
         state.ip4.push(term.value);
       }
@@ -317,8 +326,13 @@ const EmailCheck = (() => {
         add({ area: "DKIM", severity: known ? "high" : "medium", id: "dkim_missing", title: known ? `DKIM isn't set up for ${PROVIDERS[provider].name}` : "No DKIM key found on common selectors", detail: known ? `${PROVIDERS[provider].name} signs with the selector ${PROVIDERS[provider].selectors.join(" / ")}, and no key is published there. Gmail and Yahoo now expect DKIM from every sender.` : `We tried ${selectors.length} common selectors. If your provider uses a custom one, enter it above and check again. Without DKIM, Gmail and Yahoo are much more likely to reject or spam-folder your mail.` });
       } else {
         const known = provider && ["google", "microsoft", "zoho", "proton"].includes(provider);
-        if (known && !dkim.some((k) => !k.revoked && PROVIDERS[provider].selectors.includes(k.selector)))
-          add({ area: "DKIM", severity: "high", id: "dkim_provider_missing", title: `DKIM isn't set up for ${PROVIDERS[provider].name}`, detail: `There's a DKIM key for another service (${dkim.map((k) => k.selector).join(", ")}), but none for ${PROVIDERS[provider].name} (selector ${PROVIDERS[provider].selectors.join(" / ")}). Mail you send from ${PROVIDERS[provider].name} itself goes out unsigned.` });
+        // Only conclude the provider's key is missing when every key found clearly belongs to a
+        // third-party sender; an unrecognized selector may be the provider's own (custom prefix).
+        const live = dkim.filter((k) => !k.revoked);
+        if (known && live.length && live.every((k) => THIRD_PARTY_SELECTORS[k.selector])) {
+          const svc = [...new Set(live.map((k) => `${THIRD_PARTY_SELECTORS[k.selector]} (${k.selector})`))].join(", ");
+          add({ area: "DKIM", severity: "high", id: "dkim_provider_missing", title: `DKIM isn't set up for ${PROVIDERS[provider].name}`, detail: `The DKIM keys found belong to ${svc}, and there's none for ${PROVIDERS[provider].name} (default selector ${PROVIDERS[provider].selectors.join(" / ")}). Mail you send from ${PROVIDERS[provider].name} itself goes out unsigned. If you set a custom selector there, enter it above.` });
+        }
         for (const k of dkim) {
           if (k.revoked) add({ area: "DKIM", severity: "low", title: `DKIM selector "${k.selector}" is revoked`, detail: "The key is empty (p=), which is how a retired key is switched off. Fine if nothing still signs with it." });
           else if (k.bits === 1024) add({ area: "DKIM", severity: "medium", id: "dkim_1024", title: `DKIM key "${k.selector}" is 1024-bit`, detail: "Still accepted, but 2048-bit is the current recommendation. Most providers let you rotate to a 2048-bit key." });
@@ -410,9 +424,10 @@ const EmailCheck = (() => {
     for (const rec of existingRecords) {
       for (const t of parseSpf(rec)) {
         if (t.name === "all" && !t.modifier) { if (t.qualifier === "-") hard = true; continue; }
-        if (t.modifier && t.name === "redirect") continue;
-        const key = t.raw.replace(/^\+/, "").toLowerCase();
-        if (!seen.has(key)) { seen.add(key); terms.push(t.raw.replace(/^\+/, "")); }
+        // redirect= only works without an all; in a merged record it becomes an include
+        const raw = t.modifier && t.name === "redirect" ? `include:${t.value}` : t.raw.replace(/^\+/, "");
+        const key = raw.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); terms.push(raw); }
       }
     }
     if (providerTerm && !seen.has(providerTerm.toLowerCase())) terms.unshift(providerTerm);

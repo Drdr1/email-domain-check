@@ -206,6 +206,38 @@ test("an include that points at a name with no SPF is reported as broken", async
   assert.match(r.findings.find((f) => f.id === "spf_broken_include").detail, /sendgird\.net has no SPF record/);
 });
 
+test("gmail.com-style setup (SPF redirect=, dated DKIM selector) is not penalized", async () => {
+  const r = await EC.check("gmail-like.example", { resolve: fakeResolver({
+    ...GOOGLE_SPF,
+    "gmail-like.example|MX": ["5 gmail-smtp-in.l.google.com.", "10 alt1.gmail-smtp-in.l.google.com."],
+    "gmail-like.example|TXT": ["v=spf1 redirect=_spf.google.com"],
+    "20230601._domainkey.gmail-like.example|TXT": [`v=DKIM1; k=rsa; p=${KEY2048}`],
+    "_dmarc.gmail-like.example|TXT": ["v=DMARC1; p=none; sp=quarantine; rua=mailto:mailauth-reports@google.com"],
+    "_mta-sts.gmail-like.example|TXT": ["v=STSv1; id=1"],
+    "_smtp._tls.gmail-like.example|TXT": ["v=TLSRPTv1; rua=mailto:t@google.com"],
+  }) });
+  assert.ok(r.facts.spf.senders.includes("Google Workspace"));
+  assert.deepEqual(ids(r), ["dmarc_none"]);
+  assert.equal(r.grade, "B");
+});
+
+test("a merged SPF keeps a redirect= as an include", () => {
+  assert.equal(EC.mergeSpf(["v=spf1 redirect=_spf.google.com"], "include:_spf.google.com", false), "v=spf1 include:_spf.google.com ~all");
+  assert.equal(EC.mergeSpf(["v=spf1 redirect=spf.vendor.example"], "include:_spf.google.com", false), "v=spf1 include:_spf.google.com include:spf.vendor.example ~all");
+});
+
+test("an unrecognized selector may be the provider's own, so no high finding", async () => {
+  const r = await EC.check("customsel.example", { resolve: fakeResolver({
+    ...GOOGLE_SPF,
+    "customsel.example|MX": ["1 smtp.google.com."],
+    "customsel.example|TXT": ["v=spf1 include:_spf.google.com ~all"],
+    "mail._domainkey.customsel.example|TXT": [`v=DKIM1; k=rsa; p=${KEY2048}`],
+    "_dmarc.customsel.example|TXT": ["v=DMARC1; p=reject; rua=mailto:d@customsel.example"],
+  }) });
+  assert.ok(!ids(r).includes("dkim_provider_missing"));
+  assert.equal(r.grade, "A", JSON.stringify(r.findings, null, 1));
+});
+
 test("DNS failure surfaces a clear error", async () => {
   await assert.rejects(EC.check("x.example", { resolve: fakeResolver({ "x.example|MX": "ERR" }) }), /DNS lookups/);
 });
