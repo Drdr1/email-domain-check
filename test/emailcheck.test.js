@@ -221,6 +221,20 @@ test("gmail.com-style setup (SPF redirect=, dated DKIM selector) is not penalize
   assert.equal(r.grade, "B");
 });
 
+test("only revoked keys: one 'no active key' finding, not one per selector", async () => {
+  const r = await EC.check("rotated.example", { resolve: fakeResolver({
+    ...GOOGLE_SPF,
+    "rotated.example|MX": ["5 gmail-smtp-in.l.google.com."],
+    "rotated.example|TXT": ["v=spf1 redirect=_spf.google.com"],
+    "20230601._domainkey.rotated.example|TXT": ["v=DKIM1; k=rsa; p="],
+    "20221208._domainkey.rotated.example|TXT": ["v=DKIM1; k=rsa; p="],
+    "_dmarc.rotated.example|TXT": ["v=DMARC1; p=reject; rua=mailto:d@rotated.example"],
+  }) });
+  assert.deepEqual(ids(r), ["dkim_no_active"]);
+  assert.equal(r.findings.filter((f) => f.area === "DKIM").length, 1);
+  assert.equal(r.grade, "B");
+});
+
 test("a merged SPF keeps a redirect= as an include", () => {
   assert.equal(EC.mergeSpf(["v=spf1 redirect=_spf.google.com"], "include:_spf.google.com", false), "v=spf1 include:_spf.google.com ~all");
   assert.equal(EC.mergeSpf(["v=spf1 redirect=spf.vendor.example"], "include:_spf.google.com", false), "v=spf1 include:_spf.google.com include:spf.vendor.example ~all");

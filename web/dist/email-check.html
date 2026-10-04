@@ -588,12 +588,16 @@ const EmailCheck = (() => {
           const svc = [...new Set(live.map((k) => `${THIRD_PARTY_SELECTORS[k.selector]} (${k.selector})`))].join(", ");
           add({ area: "DKIM", severity: "high", id: "dkim_provider_missing", title: `DKIM isn't set up for ${PROVIDERS[provider].name}`, detail: `The DKIM keys found belong to ${svc}, and there's none for ${PROVIDERS[provider].name} (default selector ${PROVIDERS[provider].selectors.join(" / ")}). Mail you send from ${PROVIDERS[provider].name} itself goes out unsigned. If you set a custom selector there, enter it above.` });
         }
-        for (const k of dkim) {
-          if (k.revoked) add({ area: "DKIM", severity: "low", title: `DKIM selector "${k.selector}" is revoked`, detail: "The key is empty (p=), which is how a retired key is switched off. Fine if nothing still signs with it." });
-          else if (k.bits === 1024) add({ area: "DKIM", severity: "medium", id: "dkim_1024", title: `DKIM key "${k.selector}" is 1024-bit`, detail: "Still accepted, but 2048-bit is the current recommendation. Most providers let you rotate to a 2048-bit key." });
+        for (const k of live) {
+          if (k.bits === 1024) add({ area: "DKIM", severity: "medium", id: "dkim_1024", title: `DKIM key "${k.selector}" is 1024-bit`, detail: "Still accepted, but 2048-bit is the current recommendation. Most providers let you rotate to a 2048-bit key." });
         }
-        const good = dkim.filter((k) => !k.revoked);
-        if (good.length) add({ area: "DKIM", severity: "pass", title: `DKIM found: ${good.map((k) => k.selector).join(", ")}`, detail: good.map((k) => `${k.selector}: ${k.ed25519 ? "Ed25519" : k.bits + "-bit RSA"}`).join("; ") + "." });
+        // Revoked (empty) keys are normal key rotation, not a problem in themselves.
+        const revoked = dkim.filter((k) => k.revoked).map((k) => k.selector);
+        if (!live.length) {
+          add({ area: "DKIM", severity: "medium", id: "dkim_no_active", title: "No active DKIM key found", detail: `Only retired keys turned up (${revoked.join(", ")}), which suggests you rotate keys under selector names we can't guess. Enter your current selector above to check it.` });
+        } else {
+          add({ area: "DKIM", severity: "pass", title: `DKIM found: ${live.map((k) => k.selector).join(", ")}`, detail: live.map((k) => `${k.selector}: ${k.ed25519 ? "Ed25519" : k.bits + "-bit RSA"}`).join("; ") + "." + (revoked.length ? ` Retired keys: ${revoked.join(", ")}.` : "") });
+        }
       }
     }
 
