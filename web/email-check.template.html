@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Domain Check | DerOps</title>
+<meta name="description" content="Free SPF, DKIM, DMARC and blocklist check for your domain. Get an A to F grade and the exact DNS records to fix it. Runs in your browser using public DNS.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --page: #E9EDF1; --ink: #16213A; --ink-soft: #46516A; --surface: #FFFFFF; --rule: #C9D1DB;
+  --critical: #B42318; --high: #C2410C; --medium: #A16207; --low: #2F5D8A; --info: #5B6675; --pass: #2E6B3F;
+  --focus: #2F5D8A;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 17px; line-height: 1.55; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+a { color: var(--ink); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+code, pre, input.mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+h1, h2 { font-stretch: 125%; font-weight: 800; letter-spacing: -0.01em; line-height: 1.08; }
+h1 { font-size: clamp(2rem, 6vw, 3.1rem); margin: 0 0 18px; }
+h2 { font-size: clamp(1.45rem, 3.6vw, 1.9rem); margin: 0 0 12px; }
+h3 { font-size: 1.05rem; margin: 0 0 4px; font-weight: 700; }
+p { margin: 0 0 14px; }
+.lede { font-size: 1.15rem; color: var(--ink-soft); max-width: 34em; }
+
+.top { padding: 22px 0; }
+.top .wrap { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.brand { font-stretch: 125%; font-weight: 800; text-decoration: none; font-size: 1.05rem; }
+.top nav { display: flex; gap: 18px; }
+.top nav a { color: var(--ink-soft); font-size: .95rem; }
+
+.hero { padding: 36px 0 52px; }
+.hero .wrap { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; }
+.hero-note { font-size: .95rem; color: var(--ink-soft); margin-top: 16px; }
+
+form.check { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+form.check input[type=text] {
+  flex: 1 1 260px; min-width: 0; font: inherit; font-size: 1.1rem;
+  padding: 12px 14px; border: 2px solid var(--ink); border-radius: 4px; background: var(--surface); color: var(--ink);
+}
+.advanced { margin-top: 12px; font-size: .95rem; }
+.advanced summary { cursor: pointer; font-weight: 600; }
+.advanced label { display: block; margin: 10px 0 6px; color: var(--ink-soft); }
+.advanced input { font-size: .95rem; padding: 8px 10px; border: 2px solid var(--rule); border-radius: 4px; width: 220px; max-width: 100%; }
+
+/* inspection tag */
+.tag { --tone: var(--ink); position: relative; width: 210px; padding: 46px 22px 22px; background: var(--surface);
+  border: 2px solid var(--ink); clip-path: polygon(22% 0, 78% 0, 100% 14%, 100% 100%, 0 100%, 0 14%); transform: rotate(-4deg); text-align: center; }
+.tag::before { content: ""; position: absolute; top: 14px; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--page); box-shadow: inset 0 0 0 2px var(--ink); }
+.tag::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 1.4px), var(--ink) calc(50% - 1.4px), var(--ink) calc(50% + 1.4px), transparent calc(50% + 1.4px)) left top / 22% 14% no-repeat,
+    linear-gradient(to bottom left, transparent calc(50% - 1.4px), var(--ink) calc(50% - 1.4px), var(--ink) calc(50% + 1.4px), transparent calc(50% + 1.4px)) right top / 22% 14% no-repeat; }
+.tag-title { font-size: .85rem; color: var(--ink-soft); margin: 0; }
+.tag-grade { display: block; font-stretch: 125%; font-weight: 800; font-size: 7rem; line-height: 1; color: var(--tone); margin: 6px 0 4px; }
+.tag-sub { font-size: .85rem; margin: 0; color: var(--ink-soft); word-break: break-all; }
+.tag.big { width: 250px; transform: rotate(-3deg); }
+.tag.big .tag-grade { font-size: 8.5rem; }
+.tag.stamp { animation: stamp .45s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes stamp { from { transform: rotate(-12deg) scale(1.35); opacity: 0; } to { transform: rotate(-3deg) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tag.stamp { animation: none; } }
+
+section.band { padding: 48px 0; border-top: 2px solid var(--ink); }
+.surface { background: var(--surface); }
+
+button, .btn { font: inherit; font-weight: 700; border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+  padding: 10px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+button.primary, .btn.primary { background: var(--ink); color: var(--surface); }
+button:hover, .btn:hover { box-shadow: 3px 3px 0 var(--ink); }
+button.primary:hover, .btn.primary:hover { box-shadow: 3px 3px 0 var(--low); }
+button[disabled] { opacity: .6; cursor: progress; box-shadow: none; }
+button.quiet { border-color: transparent; background: transparent; padding: 4px; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+button.quiet:hover { box-shadow: none; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.copied { color: var(--pass); font-size: .9rem; font-weight: 600; }
+.status { margin-top: 12px; color: var(--ink-soft); }
+.error { border-left: 4px solid var(--critical); background: #FBEDEC; padding: 10px 14px; margin: 14px 0 0; }
+
+/* results */
+.result-head { display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; }
+.verdict { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; }
+.meta { color: var(--ink-soft); font-size: .95rem; }
+.counts { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.counts li { display: flex; align-items: baseline; gap: 6px; }
+.counts b { font-stretch: 125%; font-size: 1.5rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; align-self: center; flex: none; }
+
+.block { margin-top: 40px; }
+.block > h3 { font-size: 1.15rem; margin-bottom: 12px; }
+.finding { border-left: 5px solid var(--tone); background: var(--page); padding: 12px 14px; margin: 0 0 10px; }
+.finding .head { display: flex; gap: 10px; align-items: baseline; }
+.finding .area { margin-left: auto; color: var(--ink-soft); font-size: .9rem; white-space: nowrap; }
+.finding p { margin: 6px 0 0; color: var(--ink-soft); }
+.finding .title { font-weight: 700; }
+.passes { list-style: none; padding: 0; margin: 0; }
+.passes li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.passes li::before { content: "\2713"; color: var(--pass); font-weight: 800; }
+.passes small { display: block; color: var(--ink-soft); font-size: .88rem; word-break: break-word; }
+
+.fix { border: 2px solid var(--ink); border-radius: 4px; padding: 16px; margin-bottom: 14px; background: var(--surface); }
+.fix h4 { margin: 0 0 8px; font-size: 1.05rem; }
+.fix dl { display: grid; grid-template-columns: 70px 1fr auto; gap: 6px 12px; margin: 10px 0 0; align-items: baseline; }
+.fix dt { color: var(--ink-soft); font-size: .9rem; }
+.fix dd { margin: 0; font-family: "JetBrains Mono", monospace; font-size: .88rem; word-break: break-all; }
+.fix .note { color: var(--ink-soft); font-size: .95rem; margin: 10px 0 0; }
+.provider-pick { margin: 0 0 16px; color: var(--ink-soft); }
+.provider-pick select { font: inherit; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 4px; background: var(--surface); color: var(--ink); }
+.caveat { margin-top: 30px; padding: 14px 16px; border: 2px dashed var(--rule); color: var(--ink-soft); }
+
+.offers { margin: 24px 0 18px; border-top: 2px solid var(--ink); }
+.offer { display: grid; grid-template-columns: 1fr auto; gap: 6px 24px; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+.offer p { margin: 0; color: var(--ink-soft); }
+.offer .price { font-stretch: 125%; font-weight: 800; font-size: 1.4rem; text-align: right; }
+.offer .days { display: block; font-size: .85rem; font-weight: 500; color: var(--ink-soft); font-stretch: 100%; }
+.covers { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 20px; }
+.covers ul { margin: 0; padding-left: 20px; }
+.covers li { margin-bottom: 6px; }
+footer { padding: 36px 0 60px; color: var(--ink-soft); font-size: .95rem; border-top: 2px solid var(--ink); }
+
+@media (max-width: 680px) {
+  .hero .wrap, .result-head, .covers { grid-template-columns: 1fr; }
+  .hero .tag { justify-self: start; margin-left: 8px; }
+  .finding .area { display: none; }
+  .fix dl { grid-template-columns: 1fr; }
+  .fix dd + dd { margin-bottom: 6px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="https://derops.dev">DerOps</a>
+    <nav><a href="/check/">Supabase check</a><a href="#fix">Get it fixed</a></nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Will your emails land in the inbox?</h1>
+      <p class="lede">Gmail, Yahoo and Outlook now reject or spam-folder mail from domains without proper SPF, DKIM and DMARC. Check yours in seconds and get the exact DNS records to fix it.</p>
+      <form class="check" id="check-form" novalidate>
+        <label for="domain" class="sr" hidden>Domain</label>
+        <input type="text" id="domain" name="d" placeholder="yourcompany.com" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Domain to check">
+        <button class="primary" type="submit" id="check-btn">Check domain</button>
+      </form>
+      <details class="advanced">
+        <summary>Use a custom DKIM selector</summary>
+        <label for="selector">If your provider gave you a selector name (the part before ._domainkey), enter it here.</label>
+        <input type="text" id="selector" class="mono" placeholder="e.g. s2026" autocomplete="off" spellcheck="false">
+      </details>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <div id="error" class="error" role="alert" hidden></div>
+      <p class="hero-note">Reads only public DNS records, straight from your browser. Nothing is sent to us or stored.</p>
+    </div>
+    <div class="tag" aria-hidden="true">
+      <p class="tag-title">Inspection result</p>
+      <span class="tag-grade">?</span>
+      <p class="tag-sub">Your domain</p>
+    </div>
+  </div>
+</section>
+
+<section class="band surface" id="results" hidden tabindex="-1" aria-labelledby="results-title">
+  <div class="wrap">
+    <div class="result-head">
+      <div class="tag big" id="result-tag">
+        <p class="tag-title">Inspection result</p>
+        <span class="tag-grade" id="grade-letter"></span>
+        <p class="tag-sub" id="grade-domain"></p>
+      </div>
+      <div>
+        <h2 id="results-title"></h2>
+        <p class="verdict" id="verdict"></p>
+        <p class="meta" id="meta"></p>
+        <ul class="counts" id="counts"></ul>
+        <div class="row" style="margin-top:14px">
+          <button type="button" class="quiet" id="share-btn">Copy link to this result</button>
+          <span class="copied" id="share-status" role="status"></span>
+        </div>
+      </div>
+    </div>
+    <div class="block" id="issues-block"><h3>What needs attention</h3><div id="issues"></div></div>
+    <div class="block" id="fixes-block">
+      <h3>Records to fix it</h3>
+      <p class="provider-pick" id="provider-pick">Showing steps for
+        <select id="provider-select" aria-label="Email provider">
+          <option value="google">Google Workspace</option>
+          <option value="microsoft">Microsoft 365</option>
+          <option value="zoho">Zoho Mail</option>
+          <option value="proton">Proton Mail</option>
+          <option value="mailcow">Mailcow / self-hosted</option>
+          <option value="">Another provider</option>
+        </select>
+      </p>
+      <div id="fixes"></div>
+    </div>
+    <div class="block" id="passes-block"><h3>What's working</h3><ul class="passes" id="passes"></ul></div>
+    <p class="caveat">This checks your DNS setup, which is the part receivers verify first. It can't see your sending reputation, your content or your list quality. DNS changes can take up to an hour to show here. Make changes at your DNS host (Cloudflare, Namecheap, GoDaddy, Route 53), and keep a copy of any record before you replace it.</p>
+  </div>
+</section>
+
+<section class="band" id="fix">
+  <div class="wrap">
+    <h2>Get it fixed</h2>
+    <p class="lede">I'm Ahmed, a DevOps engineer who sets up email authentication for businesses on Google Workspace, Microsoft 365 and self-hosted Mailcow. Every engagement is booked and paid through Upwork.</p>
+    <div class="offers" id="offers"></div>
+    <div class="row">
+      <a class="btn primary" id="cta-primary" href="#" target="_blank" rel="noopener">Book on Upwork</a>
+      <a class="btn" id="cta-profile" href="#" target="_blank" rel="noopener">View my Upwork profile</a>
+    </div>
+  </div>
+</section>
+
+<section class="band surface">
+  <div class="wrap">
+    <h2>What the check looks for</h2>
+    <div class="covers">
+      <div>
+        <h3>Authentication</h3>
+        <ul>
+          <li>SPF: one valid record, the right ending, and the 10-lookup limit most checkers miss</li>
+          <li>Which services you've authorized to send as you</li>
+          <li>DKIM keys for your provider, and their strength</li>
+          <li>DMARC policy, reporting, and Gmail/Yahoo sender rules</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Delivery and reputation</h3>
+        <ul>
+          <li>MX records and which provider handles your mail</li>
+          <li>Your sending IPs and domain on common blocklists</li>
+          <li>MTA-STS and TLS reporting</li>
+          <li>Domains that don't send mail, locked against spoofing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Built by Ahmed Darder (DerOps). The checker is open source and runs entirely in your browser. Also try the <a href="/check/">Supabase Security Check</a>.</p>
+  </div>
+</footer>
+
+<script>
+{{CORE_JS}}
+</script>
+<script>
+const CONFIG = {
+  upworkOffer:   "{{UPWORK_OFFER_URL}}",
+  upworkProfile: "{{UPWORK_PROFILE_URL}}",
+  offers: {{OFFERS_JSON}}
+};
+
+const SEV = ["critical", "high", "medium", "low", "info"];
+const SEV_NAME = { critical: "Critical", high: "High", medium: "Medium", low: "Low", info: "Info" };
+const GRADES = {
+  F: { tone: "var(--critical)", text: "Something is broken: your mail can fail authentication or be blocked outright." },
+  D: { tone: "var(--high)",     text: "Several gaps. Expect spam-foldering, and your domain is easy to spoof." },
+  C: { tone: "var(--medium)",   text: "One important gap to close." },
+  B: { tone: "var(--low)",      text: "Solid basics. A few improvements will help inbox placement and spoofing protection." },
+  A: { tone: "var(--pass)",     text: "Well configured. Nothing important to fix." }
+};
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "style") n.style.cssText = v; else if (k in n) n[k] = v; else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k !== null && k !== undefined && k !== false) n.append(k);
+  return n;
+};
+
+/* links and offers */
+for (const [id, url] of [["#cta-primary", CONFIG.upworkOffer], ["#cta-profile", CONFIG.upworkProfile]]) {
+  if (/^https:\/\//.test(url)) $(id).href = url; else $(id).hidden = true;
+}
+for (const o of CONFIG.offers) {
+  $("#offers").append(el("div", { className: "offer" },
+    el("div", {}, el("h3", { textContent: o.name }), el("p", { textContent: o.text })),
+    el("div", { className: "price" }, o.price, el("span", { className: "days", textContent: o.days }))));
+}
+if (!CONFIG.offers.length) $("#offers").hidden = true;
+
+async function copyText(text, statusEl) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const t = el("textarea", { value: text, style: "position:fixed;opacity:0" });
+    document.body.append(t); t.select(); document.execCommand("copy"); t.remove();
+  }
+  if (statusEl) { statusEl.textContent = "Copied"; setTimeout(() => (statusEl.textContent = ""), 2000); }
+}
+
+const resolve = EmailCheck.dohResolver();
+let last = null;
+
+async function runCheck(domain, fixProvider) {
+  $("#error").hidden = true;
+  const btn = $("#check-btn");
+  btn.disabled = true; btn.textContent = "Checking…";
+  $("#status").textContent = "Looking up MX, SPF, DKIM, DMARC and blocklists…";
+  try {
+    const res = await EmailCheck.check(domain, { resolve, selector: $("#selector").value, fixProvider });
+    last = res;
+    render(res);
+    const url = new URL(location.href);
+    url.searchParams.set("d", res.domain);
+    if ($("#selector").value.trim()) url.searchParams.set("s", $("#selector").value.trim()); else url.searchParams.delete("s");
+    url.hash = "";
+    history.replaceState(null, "", url);
+    $("#status").textContent = "";
+    return res;
+  } catch (err) {
+    $("#status").textContent = "";
+    $("#error").textContent = err.message || String(err);
+    $("#error").hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = "Check domain";
+  }
+}
+
+function render(r, keepScroll) {
+  const g = r.grade;
+  const tag = $("#result-tag");
+  tag.style.setProperty("--tone", GRADES[g].tone);
+  $("#grade-letter").textContent = g;
+  $("#grade-domain").textContent = r.domain;
+  if (!keepScroll) { tag.classList.remove("stamp"); void tag.offsetWidth; tag.classList.add("stamp"); }
+  $("#results-title").textContent = r.domain;
+  $("#verdict").textContent = GRADES[g].text;
+
+  const f = r.facts;
+  const prov = f.provider ? EmailCheck.PROVIDERS[f.provider].name : null;
+  $("#meta").textContent = [
+    f.nullMx ? "Does not accept mail (null MX)" : prov ? `Mail handled by ${prov}` : f.mx.length ? "Custom mail server" : "No MX records",
+    f.spf.records.length && `SPF uses ${f.spf.lookups} of 10 lookups`,
+    f.spf.senders.length && `Authorized senders: ${f.spf.senders.join(", ")}`,
+    !f.sending && "This domain doesn't appear to send mail",
+  ].filter(Boolean).join(". ") + ".";
+
+  const counts = $("#counts"); counts.replaceChildren();
+  for (const k of ["critical", "high", "medium", "low"]) {
+    counts.append(el("li", {}, el("span", { className: "dot", style: `background:var(--${k})` }), el("b", { textContent: r.counts[k] }), SEV_NAME[k]));
+  }
+
+  const issues = r.findings.filter((x) => x.severity !== "pass");
+  const box = $("#issues"); box.replaceChildren();
+  $("#issues-block").hidden = !issues.length;
+  for (const x of issues) {
+    box.append(el("div", { className: "finding", style: `--tone:var(--${x.severity})` },
+      el("div", { className: "head" },
+        el("span", { className: "dot", style: `background:var(--${x.severity})` }),
+        el("span", { className: "title", textContent: x.title }),
+        el("span", { className: "area", textContent: x.area })),
+      el("p", { textContent: x.detail })));
+  }
+
+  const fixes = $("#fixes"); fixes.replaceChildren();
+  $("#fixes-block").hidden = !r.fixes.length;
+  const sel = $("#provider-select");
+  const showPick = f.sending && r.fixes.some((x) => /DKIM|SPF/.test(x.title));
+  $("#provider-pick").hidden = !showPick;
+  sel.value = (r.fixProviderUsed !== undefined ? r.fixProviderUsed : f.provider) || "";
+  for (const x of r.fixes) {
+    const card = el("div", { className: "fix" }, el("h4", { textContent: x.title }));
+    if (x.host) {
+      const st = el("span", { className: "copied", role: "status" });
+      const dl = el("dl", {});
+      const row = (label, value, copyable) => {
+        const b = copyable ? el("button", { type: "button", className: "quiet", textContent: "Copy" }) : el("span");
+        if (copyable) b.addEventListener("click", () => copyText(value, st));
+        dl.append(el("dt", { textContent: label }), el("dd", { textContent: value }), b);
+      };
+      row("Type", x.type, false);
+      row("Name", x.host, !/ and | \(\+/.test(x.host));
+      row("Value", x.value, !/^\(/.test(x.value));
+      card.append(dl, st);
+    }
+    if (x.note) card.append(el("p", { className: "note", textContent: x.note }));
+    fixes.append(card);
+  }
+
+  const passes = $("#passes"); passes.replaceChildren();
+  const ok = r.findings.filter((x) => x.severity === "pass");
+  $("#passes-block").hidden = !ok.length;
+  for (const x of ok) passes.append(el("li", {}, el("div", {}, x.title, el("small", { textContent: x.detail }))));
+
+  const results = $("#results");
+  results.hidden = false;
+  if (!keepScroll) {
+    results.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    results.focus({ preventScroll: true });
+  }
+}
+
+$("#check-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("#domain").value;
+  if (!v.trim()) { $("#error").textContent = "Enter a domain like yourcompany.com."; $("#error").hidden = false; return; }
+  runCheck(v);
+});
+$("#provider-select").addEventListener("change", async (e) => {
+  if (!last) return;
+  const res = await EmailCheck.check(last.domain, { resolve, selector: $("#selector").value, fixProvider: e.target.value || null });
+  res.fixProviderUsed = e.target.value;
+  last = res;
+  render(res, true);
+});
+$("#share-btn").addEventListener("click", () => copyText(location.href, $("#share-status")));
+
+/* shareable links: ?d=domain&s=selector */
+const params = new URLSearchParams(location.search);
+if (params.get("s")) $("#selector").value = params.get("s");
+if (params.get("d")) { $("#domain").value = params.get("d"); runCheck(params.get("d")); }
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "upwork_offer": "",
+  "upwork_profile": "https://www.upwork.com/freelancers/~0121bf29a469f9c348",
+  "offers": [
+    { "name": "DNS fix", "price": "$99", "days": "2 days", "text": "SPF, DKIM and DMARC set up correctly for one domain on your provider, with a before-and-after report." },
+    { "name": "Deliverability setup", "price": "$199", "days": "3 weeks", "text": "Everything in DNS fix, plus DMARC reporting, a review of who sends as you, and moving your policy to enforcement safely." },
+    { "name": "Blocklist and reputation recovery", "price": "$249", "days": "5 days", "text": "Find why you're listed or landing in spam, fix the cause, and handle delisting requests." }
+  ]
+}
