@@ -1,9 +1,24 @@
 {
-  "upwork_offer": "",
+  "upwork_offer": "https://www.upwork.com/services/product/marketing-spf-dkim-and-dmarc-set-up-so-your-emails-land-in-the-inbox-2106603260630541909",
   "upwork_profile": "https://www.upwork.com/freelancers/~0121bf29a469f9c348",
   "offers": [
-    { "name": "DNS Fix, done for you", "price": "$99", "days": "2 days", "text": "SPF, DKIM and DMARC set up for one domain, DKIM activated in your mail provider, and verified with a real test send." },
-    { "name": "Deliverability Setup", "price": "$199", "days": "3 weeks", "text": "Everything above, plus an inventory of every service that sends as you, DMARC report reviews, and a safe move to quarantine or reject." },
-    { "name": "Setup + Reputation Recovery", "price": "$349", "days": "3 weeks", "text": "Everything above, plus blocklist delisting, Google Postmaster and Microsoft SNDS setup, and a recovery plan." }
+    {
+      "name": "DNS Fix, done for you",
+      "price": "$99",
+      "days": "2 days",
+      "text": "SPF, DKIM and DMARC set up for one domain, DKIM activated in your mail provider, and verified with a real test send."
+    },
+    {
+      "name": "Deliverability Setup",
+      "price": "$199",
+      "days": "3 weeks",
+      "text": "Everything above, plus an inventory of every service that sends as you, DMARC report reviews, and a safe move to quarantine or reject."
+    },
+    {
+      "name": "Setup + Reputation Recovery",
+      "price": "$349",
+      "days": "3 weeks",
+      "text": "Everything above, plus blocklist delisting, Google Postmaster and Microsoft SNDS setup, and a recovery plan."
+    }
   ]
 }

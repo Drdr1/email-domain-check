@@ -4,7 +4,7 @@
  * Nothing here talks to anything except public DNS resolvers.
  */
 const EmailCheck = (() => {
-  const VERSION = "1.1";
+  const VERSION = "1.2";
   const TYPES = { A: 1, CNAME: 5, MX: 15, TXT: 16, AAAA: 28 };
 
   /* ------------------------------------------------------------------ DNS */
@@ -91,13 +91,13 @@ const EmailCheck = (() => {
     "k1", "k2", "s1", "s2", "mandrill", "mxvault", "zoho", "zmail",
     "protonmail", "protonmail2", "protonmail3", "mailjet", "mlsend", "mlsend2",
     "resend", "pm", "sig1", "everlytickey1", "cm",
-    "20230601", "20221208", "20210112", "20161025",
+    "20230601", "20221208", "20210112", "20161025", "kl", "kl2",
   ];
   // Selectors that clearly belong to a sending service, not to the mailbox provider
   const THIRD_PARTY_SELECTORS = {
     s1: "SendGrid", s2: "SendGrid", k1: "Mailchimp", k2: "Mailchimp", k3: "Mailchimp", mandrill: "Mandrill",
     mlsend: "MailerLite", mlsend2: "MailerLite", pm: "Postmark", mailjet: "Mailjet", resend: "Resend",
-    cm: "Campaign Monitor", everlytickey1: "Everlytic", mxvault: "Mxvault",
+    cm: "Campaign Monitor", everlytickey1: "Everlytic", mxvault: "Mxvault", kl: "Klaviyo", kl2: "Klaviyo",
   };
 
   const IP_BLOCKLISTS = [

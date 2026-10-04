@@ -286,3 +286,17 @@ test("the DoH resolver parses answers and falls back to the second endpoint", as
   await resolve("example.com", "TXT");
   assert.equal(calls.length, 2, "second call is cached");
 });
+
+test("Klaviyo's kl/kl2 keys are found and attributed to Klaviyo", async () => {
+  const r = await EC.check("shop.example", { resolve: fakeResolver({
+    ...GOOGLE_SPF,
+    "shop.example|MX": ["1 smtp.google.com."],
+    "shop.example|TXT": ["v=spf1 include:_spf.google.com ~all"],
+    "kl._domainkey.shop.example|TXT": [`k=rsa; p=${KEY2048}`],
+    "kl2._domainkey.shop.example|TXT": [`k=rsa; p=${KEY2048}`],
+    "_dmarc.shop.example|TXT": ["v=DMARC1; p=quarantine; rua=mailto:d@shop.example"],
+  }) });
+  assert.deepEqual(r.facts.dkim.found.map((k) => k.selector).sort(), ["kl", "kl2"]);
+  assert.deepEqual(ids(r), ["dkim_provider_missing"]);
+  assert.match(r.findings.find((f) => f.id === "dkim_provider_missing").detail, /Klaviyo \(kl\)/);
+});

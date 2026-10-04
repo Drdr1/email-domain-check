@@ -265,7 +265,7 @@ footer { padding: 36px 0 60px; color: var(--ink-soft); font-size: .95rem; border
  * Nothing here talks to anything except public DNS resolvers.
  */
 const EmailCheck = (() => {
-  const VERSION = "1.1";
+  const VERSION = "1.2";
   const TYPES = { A: 1, CNAME: 5, MX: 15, TXT: 16, AAAA: 28 };
 
   /* ------------------------------------------------------------------ DNS */
@@ -352,13 +352,13 @@ const EmailCheck = (() => {
     "k1", "k2", "s1", "s2", "mandrill", "mxvault", "zoho", "zmail",
     "protonmail", "protonmail2", "protonmail3", "mailjet", "mlsend", "mlsend2",
     "resend", "pm", "sig1", "everlytickey1", "cm",
-    "20230601", "20221208", "20210112", "20161025",
+    "20230601", "20221208", "20210112", "20161025", "kl", "kl2",
   ];
   // Selectors that clearly belong to a sending service, not to the mailbox provider
   const THIRD_PARTY_SELECTORS = {
     s1: "SendGrid", s2: "SendGrid", k1: "Mailchimp", k2: "Mailchimp", k3: "Mailchimp", mandrill: "Mandrill",
     mlsend: "MailerLite", mlsend2: "MailerLite", pm: "Postmark", mailjet: "Mailjet", resend: "Resend",
-    cm: "Campaign Monitor", everlytickey1: "Everlytic", mxvault: "Mxvault",
+    cm: "Campaign Monitor", everlytickey1: "Everlytic", mxvault: "Mxvault", kl: "Klaviyo", kl2: "Klaviyo",
   };
 
   const IP_BLOCKLISTS = [
@@ -777,7 +777,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = EmailCheck
 </script>
 <script>
 const CONFIG = {
-  upworkOffer:   "",
+  upworkOffer:   "https://www.upwork.com/services/product/marketing-spf-dkim-and-dmarc-set-up-so-your-emails-land-in-the-inbox-2106603260630541909",
   upworkProfile: "https://www.upwork.com/freelancers/~0121bf29a469f9c348",
   offers: [{"name": "DNS Fix, done for you", "price": "$99", "days": "2 days", "text": "SPF, DKIM and DMARC set up for one domain, DKIM activated in your mail provider, and verified with a real test send."}, {"name": "Deliverability Setup", "price": "$199", "days": "3 weeks", "text": "Everything above, plus an inventory of every service that sends as you, DMARC report reviews, and a safe move to quarantine or reject."}, {"name": "Setup + Reputation Recovery", "price": "$349", "days": "3 weeks", "text": "Everything above, plus blocklist delisting, Google Postmaster and Microsoft SNDS setup, and a recovery plan."}]
 };
